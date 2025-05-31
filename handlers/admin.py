@@ -3,22 +3,9 @@ from datetime import datetime
 from helpers.types import MessageWithUser
 from handlers import profile
 from handlers.graph import grafik
-from handlers.services import _summ, send_message_to_user, refresh_data
+from handlers.services import send_message_to_user
 from settngs import dp
 from database import User
-
-
-@dp.message_handler(commands=["all"])
-async def all_(message: MessageWithUser):
-    if message.from_user.id != 726837488:
-        await message.answer("Сложно непонятно говоришь")
-        await message.answer("⬇️ Доступные команды")
-    else:
-        print(datetime.now(), "| ",  message.from_user.id, 'commands=["all"]')
-        await refresh_data(message)
-        await profile(message)
-        await _summ(message)
-        await grafik(message)
 
 
 async def send_to_all_users(message_text="Бот был перезагружен, обновите данные \n /refresh"):
@@ -27,7 +14,7 @@ async def send_to_all_users(message_text="Бот был перезагружен
 
     # Отправляем сообщение каждому пользователю
     for user in users_list:
-        await send_message_to_user(user.telegram_id, message_text)
+        await send_message_to_user(user.tg_id, message_text)
         await asyncio.sleep(0.1)
 
 

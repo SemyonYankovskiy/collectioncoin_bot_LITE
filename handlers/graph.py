@@ -29,7 +29,7 @@ def get_graph_keyboards(current_limit: str):
 
 
 async def send_user_graph(callback_data: str, user: User):
-    await bot.send_chat_action(chat_id=user.telegram_id, action="upload_photo")
+    await bot.send_chat_action(chat_id=user.tg_id, action="upload_photo")
 
     limit_str = callback_data[6:]
     if limit_str.isdigit():
@@ -37,19 +37,19 @@ async def send_user_graph(callback_data: str, user: User):
     else:
         limit = None
 
-    graph_name, len_active = get_graph(user.telegram_id, limit=limit)
+    graph_name, len_active = get_graph(user.tg_id, limit=limit)
     keyboard = get_graph_keyboards(current_limit=callback_data)
     map_img = InputFile(graph_name)
 
     if limit is None or limit > len_active:
         await bot.send_photo(
-            chat_id=user.telegram_id,
+            chat_id=user.tg_id,
             photo=map_img,
             reply_markup=keyboard,
             caption=f"❕ Данные приведены за последние {len_active} {get_day_verbose_name(len_active)}",
         )
     else:
-        await bot.send_photo(chat_id=user.telegram_id, photo=map_img, reply_markup=keyboard)
+        await bot.send_photo(chat_id=user.tg_id, photo=map_img, reply_markup=keyboard)
 
     # os.remove(graph_name)
 
@@ -82,4 +82,4 @@ async def process_callback_graph(callback_query: CallbackQueryWithUser):
     await send_user_graph(limit, user)
     # messages = await bot.history(chat_id=user.telegram_id, limit=2)
     # for callback_query in messages:
-    await bot.delete_message(chat_id=user.telegram_id, message_id=callback_query.message.message_id)
+    await bot.delete_message(chat_id=user.tg_id, message_id=callback_query.message.message_id)

@@ -1,29 +1,22 @@
 import asyncio
 from aiogram import executor
+
 from handlers.admin import send_to_all_users
 from handlers.services import send_message_to_user
 from settngs import dp
-from core.gather import gather_manager, gather_graph_data
 import handlers  # инициализация хэндлеров
-from core.notifications.task import notifications_checker
 
 
 async def on_startup(dp):
     # print("Отправляем пользователям сообщение о перезагрузке бота")
     # await send_to_all_users()
-    await send_message_to_user(726837488, "ℹ️ Бот был перезагружен")
-    await send_message_to_user(726837488, "🔄 Обновляем данные для пользователей после перезагрузки...")
+    await send_message_to_user(726837488, "ℹ️ Бот запущен")
+    await send_message_to_user(726837488, "😡 Ебучая капча победила, теперь нужно вручную закидывать данные в бота")
     print("Обновляем данные для пользователей после перезагрузки")
-    await gather_graph_data()
-    # await refresh()
 
 
 async def main():
-    await asyncio.gather(
-        on_startup(dp),
-        gather_manager(),
-        # notifications_checker()
-    )
+    await asyncio.gather(on_startup(dp))
 
 if __name__ == "__main__":
     print("\nImport: ", handlers)

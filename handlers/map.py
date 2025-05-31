@@ -30,17 +30,18 @@ def get_maps_keyboards(current_location: str):
 
 
 async def send_user_map(location: str, user: User):
-    await bot.send_chat_action(chat_id=user.telegram_id, action="find_location")
+    await bot.send_chat_action(chat_id=user.tg_id, action="find_location")
 
     keyboard = get_maps_keyboards(current_location=f"map:{location}")
 
     map_img = InputFile(f"./users_files/{user.user_coin_id}_{location}.png")
 
-    await bot.send_photo(chat_id=user.telegram_id, photo=map_img, reply_markup=keyboard)
+    await bot.send_photo(chat_id=user.tg_id, photo=map_img, reply_markup=keyboard)
 
 
 def save_user_map(user: User):
     location = ["World", "Asian_Islands", "Africa", "Asia", "South_America", "North_America", "Europe"]
+
     try:
         for item in location:
             world_map = WorldMap(user_coin_id=user.user_coin_id)
@@ -80,7 +81,7 @@ async def process_callback_map(callback_query: CallbackQueryWithUser):
     location = callback_query.data[4:]
     user = User.get(tg_id=callback_query.from_user.id)
     await send_user_map(location, user)
-    await bot.delete_message(chat_id=user.telegram_id, message_id=callback_query.message.message_id)
+    await bot.delete_message(chat_id=user.tg_id, message_id=callback_query.message.message_id)
 
 
 def get_choose_color_map_scheme_keyboard():
@@ -131,7 +132,7 @@ async def choose_color_map_scheme(callback_query: CallbackQueryWithUser):
     map_img = InputFile("img/color_map_scheme.png")
     keyboard = get_choose_color_map_scheme_keyboard()
     await bot.send_photo(
-        chat_id=callback_query.user.telegram_id, photo=map_img, reply_markup=keyboard
+        chat_id=callback_query.user.tg_id, photo=map_img, reply_markup=keyboard
     )
 
 

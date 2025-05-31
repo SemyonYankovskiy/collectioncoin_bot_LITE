@@ -1,153 +1,17 @@
-import random
-import re
 from datetime import datetime, timedelta
 from typing import List, Optional
 from collections import defaultdict
 
-import httpx
+
 import matplotlib.pyplot as plt
 import openpyxl
 import pandas as pd
-import requests
+
 from matplotlib import ticker
-from requests.exceptions import RequestException
-from bs4 import BeautifulSoup
+
 
 from database import DataCoin, User
 from .name_transformer import transformer
-
-
-
-# класс ошибок
-class AuthFail(Exception):
-    pass
-
-
-# HEADERS = {
-#     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 "
-#     "YaBrowser/23.3.0.2246 Yowser/2.5 Safari/537.36"
-# }
-HEADERS = [
-    "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-    "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:109.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.43 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 OPR/106.0.0.0",
-    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.43 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 OPR/106.0.0.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.43 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 OPR/106.0.0.0",
-]
-
-
-def authorize(username, password):
-    print(datetime.now(), "| ", f"authorize [{username}]")
-
-    headers = {
-        "User-Agent": random.choice(HEADERS),
-        # "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        # "Accept-Language": "en-US,en;q=0.5",
-        # "Accept-Encoding": "utf-8",
-        # "Connection": "keep-alive",
-        # "Upgrade-Insecure-Requests": "1",
-        # "TE": "trailers",  # Required for HTTP/2
-    }
-
-    # Create an HTTP/2 client
-    client = httpx.Client(http2=True)
-
-
-    r = client.get(
-        "https://ru.ucoin.net",
-        headers=headers,
-    )
-
-
-    # Авторизация на сайте
-    resp = client.post(
-        "https://ru.ucoin.net/login",
-        data={"email": username, "passwd": password, "remember": 1},
-        headers=headers,
-    )
-
-
-
-
-    if resp.status_code != 302:
-        raise httpx.RequestError(f"Неверные данные авторизации. Status code: {resp.status_code}")
-
-    # Получаем ID пользователя из заголовка Location
-    user_coin_id = "".join(filter(str.isdigit, resp.headers.get("Location", "")))
-    print(datetime.now(), "| ", username, f"UserCoinId=[{user_coin_id}]", "Connected and authorized")
-    return user_coin_id, client
-
-
-
-
-def parsing(session, user, user_coin_id):
-    print(datetime.now(), "| ", "Start parsing")
-    try:
-        response = session.get(
-            url=f"https://ru.ucoin.net/uid{user_coin_id}?v=home",
-            headers={"user-agent": random.choice(HEADERS)},
-        )
-        if response.status_code == 504:
-            print(datetime.now(), "| ", f"Парсинг - ERROR: 504")
-
-        elif response.status_code != 200:
-            raise AuthFail(f"Получили ответ от сервера {response.status_code}")
-
-    except Exception as exc:
-        print(datetime.now(), "| ", f"Парсинг - ERROR: {exc}")
-
-    else:
-        soup = BeautifulSoup(response.content, "html.parser")
-        mydivs = str(soup.find_all("a", {"class": "btn-s btn-gray"}))
-
-        swap_pattern = r'<a class="btn-s btn-gray" href="/swap-mgr".*?>Обмен.*?<span class="blue-12">\(\+(\d+)\)</span></a>'
-        message_pattern = r'<a class="btn-s btn-gray" href="/messages".*?>Сообщения.*?<span class="blue-12">\(\+(\d+)\)</span></a>'
-
-        swap_matches = re.findall(swap_pattern, mydivs)
-        message_matches = re.findall(message_pattern, mydivs)
-
-        swap_count = sum(int(count) for count in swap_matches)
-        message_count = sum(int(count) for count in message_matches)
-
-        user.last_refresh = datetime.now().strftime("%d.%m.%Y %H:%M")
-        user.new_messages = message_count
-        user.new_swap = swap_count
-        user.save()
-        print(datetime.now(), "| ", f"Спарсил данные для {user.email}")
-
-
-def download(user_coin_id: str, session: requests.Session):
-    # Скачиваем файл
-
-    response = session.get(
-        # URL файла, который нужно скачать
-        url=f"https://ru.ucoin.net/uid{user_coin_id}?export=xls",
-        headers={"user-agent": random.choice(HEADERS)},
-    )
-
-    # Имя файла, в который нужно сохранить содержимое
-    file_name = f"./users_files/{user_coin_id}_.xlsx"
-    with open(file_name, "wb") as f:
-        f.write(response.content)
-
-    response2 = session.get(
-        # URL файла, который нужно скачать
-        url=f"https://ru.ucoin.net/swap-list/?uid={user_coin_id}&export=xls",
-        headers={"user-agent": random.choice(HEADERS)},
-    )
-    # Имя файла, в который нужно сохранить содержимое
-    file_name2 = f"./users_files/{user_coin_id}_SWAP.xlsx"
-    with open(file_name2, "wb") as f:
-        f.write(response2.content)
-
-    return file_name
 
 
 def file_opener(file_name):
@@ -172,15 +36,6 @@ def file_opener(file_name):
     total_r = round(total, 2)
     return total_r, row_count
 
-
-#
-# def refresh(telegram_id):
-#     user = User.get(telegram_id)
-#     user_coin_id, session = authorize(user.email, user.password)
-#     parsing(session, user, user_coin_id)
-#     file_name = download(user_coin_id, session)
-#     total, total_count = file_opener(file_name)
-#     DataCoin(user.telegram_id, total, total_count).save()
 
 
 def more_info(file_name):
@@ -453,12 +308,12 @@ def get_fig_marker(data_length: int) -> str:
     return ""
 
 
-def get_graph(telegram_id, limit: Optional[int] = 30):
-    owne1r = User.get(telegram_id)
+def get_graph(tg_id, limit: Optional[int] = 30):
+    owne1r = User.get(tg_id)
 
-    len_active = len(DataCoin.get_for_user(telegram_id, limit))
+    len_active = len(DataCoin.get_for_user(tg_id, limit))
 
-    graph_coin_data: List[DataCoin] = DataCoin.get_for_user(telegram_id, limit)
+    graph_coin_data: List[DataCoin] = DataCoin.get_for_user(tg_id, limit)
     graph_date = []
     graph_sum = []
     graph_coin_count = []
