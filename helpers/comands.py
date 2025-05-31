@@ -267,8 +267,8 @@ countries_cmd = [
     "Britan_Afrika",
     "Transnistria",
     "Britan_Palestine",
-    "San_Tome_and_Principy"
-    "Osman_Empire"
+    "San_Tome_and_Principy",
+    "Osman_Empire",
     "Tibet"
 
 
