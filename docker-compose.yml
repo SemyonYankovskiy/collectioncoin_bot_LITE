@@ -3,7 +3,7 @@ version: '3'
 services:
   coin-bot:
     build: .
-    image: coin-bot:2.0.7
+    image: coin-bot_lite:1.0
     restart: always
     environment:
       TG_TOKEN: <token>
