@@ -154,12 +154,12 @@ def strana(file_name, text_in):
             if row[0].value == "Аргентина":
                 desc3 = (
                     f"Разновидность: {argentina.get(row[5].value)}"
-                    if row[4].value
+                    if row[5].value
                     else ""
                 )  # монетный двор
             elif row[0].value == "Российская империя":
                 desc3 = (
-                    f"Разновидность: {transformer.get_coin_difference(row[4].value)}\n"
+                    f"Разновидность: {transformer.get_coin_difference(row[5].value)}\n"
                     if row[5].value
                     else ""
                 ) + (
@@ -169,14 +169,14 @@ def strana(file_name, text_in):
                 ) # монетный двор
             else:
                 desc3 = (
-                    f"Разновидность: {transformer.get_coin_difference(row[4].value)}"
+                    f"Разновидность: {transformer.get_coin_difference(row[5].value)}"
                     if row[5].value
                     else ""
                 )  # монетный двор
-            desc4 = f"{row[5].value}" if row[5].value else ""  # Наименование
+            desc4 = f"{row[6].value}" if row[6].value else ""  # Наименование
             des5 = f"Моя цена: {row[16].value} ₽" if row[16].value else ""  # Моя цена
             des6 = f"Комментарий: {str(row[18].value)}" if row[18].value else ""  # Комментарий
-            cena = f" {row[8].value} ₽" if row[8].value else ""  # Цена
+            cena = f" {row[9].value} ₽" if row[9].value else ""  # Цена
 
             arr.append(
                 [
