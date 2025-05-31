@@ -46,6 +46,8 @@ class WorldMap:
         "Eq. Guinea": ["Centr_Afrika"],
         "Kenya": ["Britan_Afrika"],
         "Palestine": ["Britan_Palestine"],
+        "China": ["Tibet"],
+        "Turkey": ["Osman_Empire"],
     }
 
     def __init__(self, user_coin_id: int):
