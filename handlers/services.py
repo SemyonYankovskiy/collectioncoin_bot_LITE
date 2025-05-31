@@ -117,6 +117,9 @@ async def refresh_receive_file(message: types.Message, state: FSMContext):
 
         user = User.get(message.from_user.id)
         DataCoin(user.tg_id, total, total_count).save()
+
+        user.last_refresh = datetime.now().strftime("%d.%m.%Y %H:%M")
+        user.save()
         print(datetime.now(), "|", f"DataCoin saved for user {user.tg_id}")
 
         if choice == "🌐 Обновить список монет":
