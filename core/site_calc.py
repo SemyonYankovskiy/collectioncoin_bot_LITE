@@ -126,73 +126,62 @@ def euro(file_name):
     return euros
 
 
-def strana(file_name, text_in):
-    # Открываем файл Excel с именем data.xlsx
-    # Выбираем первый лист в файле
+def strana(file_name: str, text_in: str):
     wb = openpyxl.load_workbook(file_name)
     ws = wb.active
 
-    # Вводим текст для сравнения
-    text = text_in
-    string_without_first_char = text[1:]
-    # df = pd.read_excel("./config/EngtoRu.xlsx", header=None)  # assuming no header
-    # mydict = df.set_index(0)[
-    #     1
-    # ].to_dict()  # setting first column as index and second column as values
-    text2 = transformer.get_country_rus_name(string_without_first_char)
-    arr = []
+    country_key = transformer.get_country_rus_name(text_in[1:])
+    results = []
 
-    argentina = {'A': 'ОМД: Тэджон, Южная Корея. 6-угольная звезда над датой',
-                 'B': 'ОМД: 6-гранный цветок над датой. Правильная надпись "PROVINCIAS"',
-                 'B-er': 'ОМД: 6-гранный цветок над датой. Ошибочная надпись "PROVINGIAS"',
-                 'C': 'ОМД: Париж, Франция. Ромашка с 6 лепестками над датой'}
+    argentina_varieties = {
+        'A': 'ОМД: Тэджон, Южная Корея. 6-угольная звезда над датой',
+        'B': 'ОМД: 6-гранный цветок над датой. Правильная надпись "PROVINCIAS"',
+        'B-er': 'ОМД: 6-гранный цветок над датой. Ошибочная надпись "PROVINGIAS"',
+        'C': 'ОМД: Париж, Франция. Ромашка с 6 лепестками над датой'
+    }
 
-    # Проходимся по строкам и суммируем значения в столбце G
+    historical_countries = {
+        "Российская империя", "Япония", "Швеция", "Османская империя",
+        "Нидерланды", "Испания", "Греция"
+    }
+
     for row in ws.iter_rows(min_row=1, max_col=19):
-        if row[0].value == text2:
-            desc2 = f"{row[4].value}г." if row[4].value else ""
-            if row[0].value == "Аргентина":
-                desc3 = (
-                    f"Разновидность: {argentina.get(row[5].value)}"
-                    if row[5].value
-                    else ""
-                )  # монетный двор
-            elif row[0].value == "Российская империя":
-                desc3 = (
-                    f"Разновидность: {transformer.get_coin_difference(row[5].value)}\n"
-                    if row[5].value
-                    else ""
-                ) + (
-                    f"Период: {(row[1].value)}"
-                    if row[1].value
-                    else ""
-                ) # монетный двор
-            else:
-                desc3 = (
-                    f"Разновидность: {transformer.get_coin_difference(row[5].value)}"
-                    if row[5].value
-                    else ""
-                )  # монетный двор
-            desc4 = f"{row[6].value}" if row[6].value else ""  # Наименование
-            des5 = f"Моя цена: {row[16].value} ₽" if row[16].value else ""  # Моя цена
-            des6 = f"Комментарий: {str(row[18].value)}" if row[18].value else ""  # Комментарий
-            cena = f" {row[9].value} ₽" if row[9].value else ""  # Цена
+        if row[0].value != country_key:
+            continue
 
-            arr.append(
-                [
-                    row[0].value,
-                    transformer.get_country_code(row[0].value),
-                    row[2].value,
-                    desc2,  # ГОД
-                    cena,
-                    desc3,
-                    desc4,
-                    des5,  # покупка
-                    des6,
-                ]
-            )
+        country = row[0].value
+        year = f"{row[4].value}г." if row[4].value else ""
+        mint = row[5].value
+        name = row[6].value or ""
+        my_price = f"Моя цена: {row[16].value} ₽" if row[16].value else ""
+        comment = f"Комментарий: {row[18].value}" if row[18].value else ""
+        price = f"{row[9].value} ₽" if row[9].value else ""
 
-    return arr
+        if country == "Аргентина":
+            variety = argentina_varieties.get(mint, "")
+            desc3 = f"Разновидность: {variety}" if variety else ""
+        elif country in historical_countries:
+            desc3 = ""
+            if mint:
+                desc3 += f"Разновидность: {transformer.get_coin_difference(mint)}\n"
+            if row[1].value:
+                desc3 += f"Период: {row[1].value}"
+        else:
+            desc3 = f"Разновидность: {transformer.get_coin_difference(mint)}" if mint else ""
+
+        results.append([
+            country,
+            transformer.get_country_code(country),
+            row[3].value,  # номинал
+            year,
+            price,
+            desc3,
+            name,
+            my_price,
+            comment,
+        ])
+
+    return results
 
 
 def func_swap(file_name):

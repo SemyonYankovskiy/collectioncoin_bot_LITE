@@ -102,6 +102,7 @@ async def refresh_receive_file(message: types.Message, state: FSMContext):
 
     user = User.get(message.from_user.id)
     user_coin_id = user.user_coin_id
+
     if choice == "🌐 Обновить список монет":
         file_name = f"./users_files/{user_coin_id}_.xlsx"
     else:
@@ -111,18 +112,18 @@ async def refresh_receive_file(message: types.Message, state: FSMContext):
         await document.download(destination_file=file_name)
         print(datetime.now(), "|", f"File saved as {file_name}")
 
-        loop = asyncio.get_running_loop()
-        total, total_count = await loop.run_in_executor(executor, file_opener, file_name)
-        print(datetime.now(), "|", f"file_opener returned total={total}, total_count={total_count}")
-
-        user = User.get(message.from_user.id)
-        DataCoin(user.tg_id, total, total_count).save()
-
-        user.last_refresh = datetime.now().strftime("%d.%m.%Y %H:%M")
-        user.save()
-        print(datetime.now(), "|", f"DataCoin saved for user {user.tg_id}")
-
         if choice == "🌐 Обновить список монет":
+            loop = asyncio.get_running_loop()
+            total, total_count = await loop.run_in_executor(executor, file_opener, file_name)
+            print(datetime.now(), "|", f"file_opener returned total={total}, total_count={total_count}")
+
+            user = User.get(message.from_user.id)
+            DataCoin(user.tg_id, total, total_count).save()
+
+            user.last_refresh = datetime.now().strftime("%d.%m.%Y %H:%M")
+            user.save()
+            print(datetime.now(), "|", f"DataCoin saved for user {user.tg_id}")
+
             await message.answer("⏳ Я не завис, рисую карты")
             await loop.run_in_executor(executor, save_user_map, user)
             print(datetime.now(), "|", f"Карты обновлены для пользователя {user.tg_id}")
